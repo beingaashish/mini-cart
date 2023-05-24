@@ -6,11 +6,23 @@ import { formatCurrency } from "./util.js";
 const miniCartToggleButton = document.querySelector('[data-minicart-toggle-button]');
 const minCartWrapper = document.querySelector('[data-minicart-wrapper');
 const miniCartProducts = document.querySelector('[data-minicart-products]');
+const MINI_CART_SESSION_KEY = 'MINI_CART_SESSION_KEY';
 
 const minCartProductImgUrl = 'https://dummyimage.com/210x130/';
 const productTemplate = document.querySelector('#mincart-product-template');
 const productsContainer = document.querySelector( '.products-container' );
-let   miniCartItems = [];
+let   miniCartItems = loadCartItems();
+
+if ( miniCartItems != undefined && miniCartItems.length > 0 ) {
+
+  miniCartItems.forEach( item => {
+    let product = productData.find( product => product.id == item.id );
+    addToCart(product);
+    updateCartItems(item);
+  } );
+  updateCartTotal();
+
+}
 
 export function initiateMiniStore() {
 
@@ -46,19 +58,29 @@ globalEventListener( productsContainer, 'click', function( e ) {
       updateCartItems( productInCart );
       updateCartTotal();
   }
+
+  // Update session storage.
+  sessionStorage.setItem(MINI_CART_SESSION_KEY, JSON.stringify(miniCartItems) );
 } );
 
 globalEventListener( minCartWrapper, 'click', function ( e ) {
   if (e.target.matches('[data-remove-from-cart-button]')) {
-    let parentWrapperEl = e.target.closest('[data-product]');
-    let itemId = parentWrapperEl.getAttribute('data-product')
+    let mainItem = e.target.closest('[data-product]');
+    let itemId = mainItem.getAttribute('data-product')
 
     // Update miniCartItems
     miniCartItems = miniCartItems.filter( el => el.id != itemId );
 
+    if ( miniCartItems.length == 0 ) {
+      initiateMiniStore();
+    }
+
     // Update display.
+    mainItem.remove();
+    updateCartTotal();
 
-
+    // Update session storage.
+    sessionStorage.setItem(MINI_CART_SESSION_KEY, JSON.stringify(miniCartItems));
   }
 } );
 
@@ -92,4 +114,14 @@ function updateCartTotal() {
 
   minicartProductsNum.innerText = miniCartItems.length;
 
+}
+
+function loadCartItems() {
+  let cartItems = JSON.parse(sessionStorage.getItem(MINI_CART_SESSION_KEY));
+
+  if ( cartItems == undefined ) {
+    return [];
+  } else {
+    return cartItems;
+  }
 }
